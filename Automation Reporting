@@ -1,0 +1,26 @@
+-- Use TICKET.DATA database
+--This query is for identifting automations completed as a result of the FCC Report Automation effort in 2022.  Created in Oracle SQL Developer.  
+--Created by Fred Spragg
+--Date Created: 4/10/23
+
+SELECT 
+    j.journalid,
+    j.datecreated,
+    j.journal_text,
+    j.related_recordid,
+    FROM_TZ(CAST(TO_DATE('01-JAN-1970', 'DD-MON-YYYY') + (j.datecreated / 60 / 60 / 24) AS TIMESTAMP), 'GMT') AT TIME ZONE 'US/Eastern' AS datecreated_et,
+    f.region,
+    CASE 
+        WHEN f.region IN ('Hampton Roads', 'Northern Virginia', 'Omaha') THEN 'Phase 1 RB'
+        WHEN f.region IN ('Atlanta', 'Baton Rouge', 'New Orleans') THEN 'Phase 2 Prod'
+        WHEN f.region IN ('Kansas', 'Oklahoma City') THEN 'Phase 2 RB'
+        WHEN f.region IN ('Orange County', 'Rhode Island', 'San Diego') THEN 'Phase 3 Prod'
+        WHEN f.region IN ('Las Vegas', 'Phoenix') THEN 'Phase 4 RB'
+        ELSE 'Other'
+    END Phase
+FROM journals j
+LEFT JOIN fcc_tickets f
+    ON j.related_recordid = f.requestid
+WHERE UPPER(j.journal_text) LIKE '%SIMPLEX%' 
+    AND j.related_recordid LIKE 'FCC%' 
+    AND j.createdby LIKE 'FCCENG'
